@@ -1,12 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>محرر PDF مباشر</title>
+    <title>محرر PDF متعدد الصفحات</title>
     <style>
-        body { font-family: Arial; text-align: center; margin: 20px; }
-        #pdf-container { position: relative; display: inline-block; border: 1px solid #ccc; }
+        body { font-family: Arial; text-align: center; margin: 20px; direction: rtl; }
+        #pdf-container { position: relative; display: inline-block; margin-top: 20px; border: 1px solid #ccc; }
         canvas { border: 1px solid #000; }
         .draggable {
             position: absolute;
@@ -17,16 +16,96 @@
             resize: both;
             overflow: auto;
         }
+        button {
+            margin: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
-    <h2>محرر PDF مباشر</h2>
-    <input type="file" id="pdf-upload" accept=".pdf"><br><br>
+    <h2>📄 محرر PDF متعدد الصفحات</h2>
+    <input type="file" id="pdf-upload" accept=".pdf">
+    <br><br>
     <button onclick="addText()">➕ إضافة نص</button>
     <button onclick="addImage()">🖼️ إضافة صورة</button>
-    <input type="file" id="image-upload" accept="image/*" style="display: none;"><br><br>
+    <button onclick="saveAsPDF()">💾 حفظ PDF</button>
+    <br>
+    <button onclick="prevPage()">⬅ الصفحة السابقة</button>
+    <button onclick="nextPage()">➡ الصفحة التالية</button>
+    <span id="page-info">صفحة 1 / ؟</span>
+    <br>
+    <input type="file" id="image-upload" accept="image/*" style="display: none;">
     <div id="pdf-container"></div>
+
+    <!-- المكتبات -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <script src="viewer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="static/viewer.js"></script>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 0;
+
+        function renderPage(num) {
+            pdfDoc.getPage(num).then(function (page) {
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                const container = document.getElementById('pdf-container');
+                container.innerHTML = '';
+                container.appendChild(canvas);
+                page.render({ canvasContext: context, viewport: viewport });
+                document.getElementById('page-info').innerText = `صفحة ${num} / ${totalPages}`;
+            });
+        }
+
+        function prevPage() {
+            if (currentPage <= 1) return;
+            currentPage--;
+            renderPage(currentPage);
+        }
+
+        function nextPage() {
+            if (currentPage >= totalPages) return;
+            currentPage++;
+            renderPage(currentPage);
+        }
+
+        document.getElementById('pdf-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type === "application/pdf") {
+                const fileReader = new FileReader();
+                fileReader.onload = function () {
+                    const typedarray = new Uint8Array(this.result);
+                    pdfjsLib.getDocument(typedarray).promise.then(function (pdf) {
+                        pdfDoc = pdf;
+                        totalPages = pdf.numPages;
+                        currentPage = 1;
+                        renderPage(currentPage);
+                    });
+                };
+                fileReader.readAsArrayBuffer(file);
+            }
+        });
+
+        function saveAsPDF() {
+            const { jsPDF } = window.jspdf;
+            html2canvas(document.getElementById('pdf-container')).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'pt', 'a4');
+                const pageWidth = 595.28;
+                const pageHeight = 841.89;
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pageWidth;
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('edited.pdf');
+            });
+        }
+    </script>
 </body>
 </html>
