@@ -16,7 +16,12 @@ def index():
 def upload():
     file = request.files['file']
     if file and file.filename.endswith('.pdf'):
-        path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        # تأكد أن مجلد uploads موجود
+        upload_dir = app.config['UPLOAD_FOLDER']
+        if not os.path.exists(upload_dir):
+            os.makedirs(upload_dir)
+
+        path = os.path.join(upload_dir, file.filename)
         file.save(path)
         return {'filename': file.filename, 'status': 'ok'}
     return {'status': 'error'}
@@ -38,11 +43,6 @@ def generate():
             size = int(item['size'])
             color = tuple(int(item['color'][i:i+2], 16)/255 for i in (1, 3, 5))
             page.insert_text((x, y), text, fontsize=size, color=color, fontname="helv")
-        elif item['type'] == 'image':
-            x, y = float(item['x']), float(item['y'])
-            w, h = float(item['width']), float(item['height'])
-            img_bytes = BytesIO(request.files[item['fileField']].read())
-            page.insert_image([x, y, x+w, y+h], stream=img_bytes)
 
     output = BytesIO()
     doc.save(output)
@@ -50,4 +50,4 @@ def generate():
     return send_file(output, as_attachment=True, download_name='final.pdf', mimetype='application/pdf')
 
 if __name__ == '__main__':
- app.run(debug=True, host='0.0.0.0', port=10000)
+    app.run(debug=True, host='0.0.0.0', port=10000)
