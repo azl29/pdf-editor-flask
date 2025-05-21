@@ -1,4 +1,3 @@
-
 let pdfDoc = null;
 let currentPage = 1;
 
@@ -6,9 +5,9 @@ document.getElementById('pdf-upload').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file && file.type === "application/pdf") {
         const fileReader = new FileReader();
-        fileReader.onload = function() {
+        fileReader.onload = function () {
             const typedarray = new Uint8Array(this.result);
-            pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+            pdfjsLib.getDocument(typedarray).promise.then(function (pdf) {
                 pdfDoc = pdf;
                 currentPage = 1;
                 renderPage(currentPage);
@@ -19,7 +18,7 @@ document.getElementById('pdf-upload').addEventListener('change', (e) => {
 });
 
 function renderPage(num) {
-    pdfDoc.getPage(num).then(function(page) {
+    pdfDoc.getPage(num).then(function (page) {
         const viewport = page.getViewport({ scale: 1.5 });
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -51,7 +50,7 @@ document.getElementById('image-upload').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = function (evt) {
         const img = document.createElement('img');
         img.src = evt.target.result;
         img.style.width = '100px';
